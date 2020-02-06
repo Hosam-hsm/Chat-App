@@ -31,9 +31,7 @@ interface Styles {
 
 export default class Login extends React.Component<LoginProps, LoginState> {
 
-    static navigationOptions = {
-        header: null
-    };
+  
 
     state = {
         name: '',
@@ -47,7 +45,7 @@ export default class Login extends React.Component<LoginProps, LoginState> {
             email: this.state.email,
             password: this.state.password,
         };
-
+        console.log(user);
         const response = firebaseSDK.login(
             user,
             this.loginSuccess,

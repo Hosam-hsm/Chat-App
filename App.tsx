@@ -5,16 +5,16 @@ import { createAppContainer } from 'react-navigation';
 import { createStackNavigator } from 'react-navigation-stack';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import AuthLoading from './components/AuthLoading';
 
 export class App extends React.Component {
-  static navigationOptions = {
-    header: null
-  };
+ 
 
   render() {
+
     return (
       <View style={styles.container}>
-        <Chat />
+        <Chat  />
       </View>
     );
   }
@@ -30,10 +30,18 @@ const AppNavigator = createStackNavigator({
   Signup: {
     screen: Signup,
   },
+  Auth: {
+    screen: AuthLoading,
+  },
   Chat: {
     screen: App,
   },
-});
+},
+  {
+    initialRouteName: "Auth",
+    headerMode: "none"
+  }
+);
 
 export default createAppContainer(AppNavigator);
 
