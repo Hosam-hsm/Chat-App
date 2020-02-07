@@ -18,6 +18,7 @@ import {
 
 import firebaseSDK from '../config/firebaseSDK';
 
+var ColorCode = 'rgb(' + (Math.floor(Math.random() * 256)) + ',' + (Math.floor(Math.random() * 256)) + ',' + (Math.floor(Math.random() * 256)) + ')';
 
 interface SignupProps {
     navigation: NavigationScreenProp<NavigationState, NavigationParams>
@@ -27,6 +28,7 @@ interface SignupState {
     name: string;
     email: string;
     password: string;
+    Color:string
 }
 
 export default class Signup extends React.Component<SignupProps, SignupState> {
@@ -39,6 +41,7 @@ export default class Signup extends React.Component<SignupProps, SignupState> {
         name: '',
         email: '',
         password: '',
+        Color: ColorCode
     };
 
     onPressCreate = async () => {
@@ -46,7 +49,8 @@ export default class Signup extends React.Component<SignupProps, SignupState> {
             const user = {
                 name: this.state.name,
                 email: this.state.email,
-                password: this.state.password
+                password: this.state.password,
+                color:this.state.Color
             };
             await firebaseSDK.createAccount(user);
         } catch ({ message }) {

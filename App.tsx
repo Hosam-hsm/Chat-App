@@ -7,15 +7,19 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 import AuthLoading from './components/AuthLoading';
 
+import { Provider } from 'mobx-react';
+
+import observableStore from './store/store';
+
 export class App extends React.Component {
- 
+
 
   render() {
 
     return (
-      <View style={styles.container}>
-        <Chat  />
-      </View>
+      <Provider observableStore={observableStore}>
+        <Chat />
+      </Provider>
     );
   }
 
