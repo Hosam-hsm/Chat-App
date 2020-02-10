@@ -27,11 +27,12 @@ interface Styles {
     buttonContainer: ViewStyle;
     button: ViewStyle;
     buttonText: TextStyle;
+    signup: ViewStyle;
 }
 
 export default class Login extends React.Component<LoginProps, LoginState> {
 
-  
+
 
     state = {
         name: '',
@@ -65,8 +66,8 @@ export default class Login extends React.Component<LoginProps, LoginState> {
         alert('Login failure. Please try again.');
     };
 
-    onChangeTextEmail = email => this.setState({ email });
-    onChangeTextPassword = password => this.setState({ password });
+    onChangeTextEmail = (email: string) => this.setState({ email });
+    onChangeTextPassword = (password: string) => this.setState({ password });
 
     render() {
         return (
@@ -98,13 +99,17 @@ export default class Login extends React.Component<LoginProps, LoginState> {
                             <Text style={styles.buttonText}>Login</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            activeOpacity={0.5}
-                            style={styles.button}
-                            onPress={() => this.props.navigation.navigate('Signup')}
-                        >
-                            <Text >Signup</Text>
-                        </TouchableOpacity>
+                        <View style={styles.signup}>
+                            <Text style={{ color: '#fff', marginBottom: 3 }}>Don't have an account yet?</Text>
+                            <TouchableOpacity
+                                activeOpacity={0.5}
+                                style={styles.button}
+                                onPress={() => this.props.navigation.navigate('Signup')}
+                            >
+                                <Text style={{ fontWeight: 'bold' }}>Signup</Text>
+                            </TouchableOpacity>
+                        </View>
+
                     </View>
                 </View>
             </ImageBackground>
@@ -143,13 +148,15 @@ const styles = StyleSheet.create<Styles>({
     },
     buttonContainer: {
         alignItems: 'center',
-        margin: 28,
-        justifyContent:'space-between',
-        flexDirection:'row'
+        margin: 20,
+        justifyContent: 'space-between',
+    },
+    signup: {
+        marginTop: 60
     },
     button: {
         height: 40,
-        margin:2,
+        margin: 2,
         width: 150,
         borderRadius: 15,
         justifyContent: 'center',

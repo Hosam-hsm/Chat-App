@@ -38,13 +38,17 @@ class FirebaseSDK {
             ' name:' +
             user.name
           );
+          firebase.firestore().collection("Users").doc(firebase.auth().currentUser.uid).set({
+            username: user.name,
+            email: user.email,
+            isTyping: false,
+            uid: firebase.auth().currentUser.uid,
+          })
           var userf = firebase.auth().currentUser;
           userf.updateProfile({ displayName: user.name }).then(
             function () {
               console.log('Updated displayName successfully. name:' + user.name);
-              alert(
-                'User ' + user.name + ' was created successfully. Please login.'
-              );
+             
             },
             function (error) {
               console.warn('Error update displayName.');

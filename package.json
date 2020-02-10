@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@react-native-community/masked-view": "0.1.5",
+    "@types/react-native-vector-icons": "^6.4.5",
     "expo": "~36.0.0",
     "expo-document-picker": "^8.0.0",
     "expo-image-picker": "^8.0.2",

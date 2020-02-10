@@ -1,5 +1,4 @@
 import React from 'react';
-import { ImagePicker, Permissions } from 'expo';
 import {
     StyleSheet,
     Text,
@@ -16,6 +15,8 @@ import {
     NavigationState
 } from 'react-navigation';
 
+import firebase from "@firebase/app";
+
 import firebaseSDK from '../config/firebaseSDK';
 
 var ColorCode = 'rgb(' + (Math.floor(Math.random() * 256)) + ',' + (Math.floor(Math.random() * 256)) + ',' + (Math.floor(Math.random() * 256)) + ')';
@@ -28,7 +29,7 @@ interface SignupState {
     name: string;
     email: string;
     password: string;
-    Color:string
+    Color: string
 }
 
 export default class Signup extends React.Component<SignupProps, SignupState> {
@@ -37,12 +38,19 @@ export default class Signup extends React.Component<SignupProps, SignupState> {
         header: null
     };
 
-    state = {
-        name: '',
-        email: '',
-        password: '',
-        Color: ColorCode
-    };
+    constructor(props:any) {
+        super(props);
+        this.state = {
+            name: '',
+            email: '',
+            password: '',
+            Color: ColorCode
+        };
+        this.usersRef = firebase.firestore().collection("Users")
+    }
+
+
+
 
     onPressCreate = async () => {
         try {
@@ -50,7 +58,7 @@ export default class Signup extends React.Component<SignupProps, SignupState> {
                 name: this.state.name,
                 email: this.state.email,
                 password: this.state.password,
-                color:this.state.Color
+                color: this.state.Color
             };
             await firebaseSDK.createAccount(user);
         } catch ({ message }) {
@@ -58,9 +66,9 @@ export default class Signup extends React.Component<SignupProps, SignupState> {
         }
     };
 
-    onChangeTextEmail = email => this.setState({ email });
-    onChangeTextPassword = password => this.setState({ password });
-    onChangeTextName = name => this.setState({ name });
+    onChangeTextEmail = (email:string) => this.setState({ email });
+    onChangeTextPassword = (password:string) => this.setState({ password });
+    onChangeTextName = (name:string) => this.setState({ name });
 
     render() {
         return (
@@ -95,13 +103,17 @@ export default class Signup extends React.Component<SignupProps, SignupState> {
                             <Text style={styles.buttonText}>Signup</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            activeOpacity={0.5}
-                            style={styles.button}
-                            onPress={() => this.props.navigation.navigate('Login')}
-                        >
-                            <Text >Login</Text>
-                        </TouchableOpacity>
+                        <View style={styles.login}>
+                            <Text style={{ color: '#fff', marginBottom: 3 }}>Already have an account?</Text>
+                            <TouchableOpacity
+                                activeOpacity={0.5}
+                                style={styles.button}
+                                onPress={() => this.props.navigation.navigate('Login')}
+                            >
+                                <Text style={{fontWeight:'bold'}} >Login</Text>
+                            </TouchableOpacity>
+                        </View>
+
                     </View>
                 </View>
             </ImageBackground>
@@ -130,9 +142,11 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         alignItems: 'center',
-        margin: 28,
-        justifyContent:'space-between',
-        flexDirection:'row'
+        margin: 20,
+        justifyContent: 'space-between',  
+    },
+    login:{
+        marginTop: 60
     },
     button: {
         height: 40,

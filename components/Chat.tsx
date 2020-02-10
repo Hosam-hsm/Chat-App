@@ -7,7 +7,8 @@ import {
     NavigationParams,
     NavigationScreenProp,
     NavigationState,
-    FlatList
+    FlatList,
+    ScrollView
 } from 'react-navigation';
 import * as ImagePicker from 'expo-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -22,13 +23,12 @@ const { height, width } = Dimensions.get('window')
 
 interface ChatProps {
     navigation: NavigationScreenProp<NavigationState, NavigationParams>;
-
 }
 
 interface ChatState {
     messages: Array<object>
     text: string;
-    isTyping: boolean;
+    typingUser: string;
     image: any;
     eventImagePer: string;
 }
@@ -40,16 +40,17 @@ class Chat extends React.Component<ChatProps, ChatState> {
         title: (navigation.state.params || {}).name || 'Chat!'
     });
 
-    constructor(props) {
+    constructor(props: any) {
         super(props);
         this.state = {
             messages: [],
             text: '',
-            isTyping: false,
+            typingUser: '',
             image: null,
             eventImagePer: '0'
         };
         this.chatRef = firebase.firestore().collection("Chat")
+        this.usersRef = firebase.firestore().collection("Users")
         this.storageRef = firebase.storage().ref();
     }
 
@@ -63,6 +64,18 @@ class Chat extends React.Component<ChatProps, ChatState> {
                 })
             })
         })
+
+        this.usersRef.onSnapshot((query) => {
+            this.setState({ typingUser: '' })
+            query.forEach((doc) => {
+                console.log(this.state.typingUser)
+                if (doc.data().isTyping)
+                    this.setState({
+                        typingUser: this.state.typingUser.concat(doc.data().username)
+                    })
+                else null
+            })
+        })
     }
 
     getPermissionAsync = async () => {
@@ -73,7 +86,7 @@ class Chat extends React.Component<ChatProps, ChatState> {
     }
 
 
-    submitMessage = (text, username, uid) => {
+    submitMessage = (text: string, username: string, uid: string) => {
         var time = new Date().getTime();
         var formattedTime = moment(time).format("hh:mm A");
         text.trim() !== "" &&
@@ -84,11 +97,12 @@ class Chat extends React.Component<ChatProps, ChatState> {
                 time: formattedTime,
                 uid: uid,
             })
-        this.setState({ text: '', isTyping: false })
+        this.setState({ text: '' })
+        this.usersRef.doc(firebase.auth().currentUser.uid).update({ isTyping: false })
     }
 
 
-    renderMessage(item, index) {
+    renderMessage(item: object, index: number) {
         let uid = firebase.auth().currentUser.uid
         return (
             uid === item.uid ?
@@ -97,14 +111,14 @@ class Chat extends React.Component<ChatProps, ChatState> {
                         <Text style={styles.username}>{item.username}</Text>
                     </View>
                     {item.imageUrl ?
-                        <View style={{ flex: 1, padding: 10, height: height / 3, width: width - 60 }}>
-                            <Image style={{ height: '100%', width: '100%', resizeMode: 'contain', }} source={{ uri: item.imageUrl }} />
-                        </View>
+
+                        <Image style={{ marginTop: 5, alignSelf: 'center', height: height / 3, width: width - 65, resizeMode: 'contain', }} source={{ uri: item.imageUrl }} />
+
                         : null}
                     <View style={styles.messageContent}>
                         <Text>{item.text}</Text>
-                        <Text style={styles.time}>{item.time}</Text>
                     </View>
+                    <Text style={styles.time}>{item.time}</Text>
 
                 </View>
                 :
@@ -113,24 +127,32 @@ class Chat extends React.Component<ChatProps, ChatState> {
                         <Text style={styles.username}>{item.username}</Text>
                     </View>
                     {item.imageUrl ?
-                        <View style={{ flex: 1, padding: 10, height: height / 3, width: width - 60 }}>
-                            <Image style={{ height: '100%', width: '100%', resizeMode: 'contain', }} source={{ uri: item.imageUrl }} />
-                        </View>
+
+                        <Image style={{ marginTop: 5, alignSelf: 'center', height: height / 3, width: width - 65, resizeMode: 'contain', }} source={{ uri: item.imageUrl }} />
+
                         : null}
                     <View style={styles.messageContent}>
                         <Text>{item.text}</Text>
-                        <Text style={styles.time}>{item.time}</Text>
                     </View>
-
+                    <Text style={styles.time}>{item.time}</Text>
                 </View>
         )
+    }
+
+    checkTyping = (length: number) => {
+        length === 0 ?
+            this.usersRef.doc(firebase.auth().currentUser.uid).update({ isTyping: false })
+            :
+            this.usersRef.doc(firebase.auth().currentUser.uid).update({ isTyping: true });
     }
 
     logout = () => {
         firebase.auth().signOut();
     };
 
+
     render() {
+        console.disableYellowBox = true;
         const text = this.state.text
         var username = firebase.auth().currentUser.displayName;
         var uid = firebase.auth().currentUser.uid
@@ -138,56 +160,56 @@ class Chat extends React.Component<ChatProps, ChatState> {
             <ImageBackground blurRadius={0} source={require('../assets/bgImage.jpg')} style={{ width: '100%', height: '100%' }}>
                 <View style={styles.container}>
                     <View style={styles.header}>
-                        <Text style={{ fontSize: 22, fontWeight: 'bold' }}>GROUP CHAT</Text>
-                        {
-                            this.state.isTyping ?
-                                <View style={{flexDirection:'row',justifyContent:'center'}}>
-                                    <Text>
-                                        {username} is typing
-                                    </Text>
-                                    <LottieView source={require('../assets/dots.json')}
-                                        autoPlay loop
-                                        style={{ height:20,width:20  }}
-                                    />
-                                </View>
-
-                                :
-                                null
-                        }
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text style={{ fontStyle: 'italic' }}>Logged in as {username}</Text>
+                            <Text style={{ fontSize: 22, fontWeight: 'bold' }}>GROUP CHAT</Text>
                             <TouchableOpacity
                                 style={{ alignSelf: 'flex-end' }}
                                 activeOpacity={0.5}
                                 onPress={() => this.logout()}
                             >
-                                <Text style={{ color: 'red' }}>Logout</Text>
+                                <Text style={styles.logoutText}>Logout</Text>
                             </TouchableOpacity>
                         </View>
+                        {
+                            this.state.typingUser ?
+                                <View style={{ flexDirection: 'row' }}>
+                                    <Text style={{ paddingBottom: 5 }}>{this.state.typingUser} is typing</Text>
+                                    <LottieView source={require('../assets/dots.json')}
+                                        autoPlay loop
+                                        style={{ height: 20, width: 20 }}
+                                    />
+                                </View>
+                                :
+                                null
+                        }
 
                     </View>
 
                     <View>
                         <FlatList
-                            ref={(list) => this.flatList = list}
+                            ref={(ref) => this.flatList = ref}
                             contentContainerStyle={{ marginTop: 15, paddingBottom: 160 }}
                             data={this.state.messages}
                             renderItem={({ item, index }) => this.renderMessage(item, index)}
-                            keyExtractor={(item, index) => item.key}
+                            keyExtractor={(item, index) => item.uid}
                             onContentSizeChange={() =>
                                 this.flatList.scrollToEnd({ animated: true })
                             }
                             getItemLayout={(data, index) => (
-                                { length: 100, offset: 100 * index, index }
+                                { length: 180, offset: 180 * index, index }
                             )}
 
                         />
                     </View>
+
                     <KeyboardAvoidingView behavior="padding" style={styles.inputContainer}>
                         <TextInput
                             style={styles.textInput}
                             placeholder="Type a message"
-                            onChangeText={(text) => this.setState({ text: text, isTyping: true })}
+                            onChangeText={(text) => this.setState({ text: text },
+                                () => {
+                                    this.checkTyping(text.length);
+                                })}
                             value={this.state.text}
                             multiline={true}
                         />
@@ -197,8 +219,9 @@ class Chat extends React.Component<ChatProps, ChatState> {
                         <TouchableOpacity style={styles.sendButton} onPress={() => this.submitMessage(text, username, uid)} activeOpacity={.7}>
                             <Icon name="md-send" size={25} color="#fff" style={{ marginLeft: 5 }} />
                         </TouchableOpacity>
-
                     </KeyboardAvoidingView>
+
+
 
                 </View >
             </ImageBackground>
@@ -211,10 +234,10 @@ class Chat extends React.Component<ChatProps, ChatState> {
         var uid = firebase.auth().currentUser.uid
         let result = await ImagePicker.launchImageLibraryAsync({
             base64: true,
-            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
-            quality: 1
+            quality: 0.5
         });
         if (!result.cancelled) {
             const response = await fetch(result.uri);
@@ -249,10 +272,15 @@ const styles = StyleSheet.create({
 
     },
     header: {
-        height: 80,
-        padding: 15,
+        height: 70,
+        padding: 10,
         backgroundColor: '#fff',
-        elevation: 5
+        elevation: 5,
+    },
+    logoutText: {
+        fontWeight: 'bold',
+        color: 'red',
+        marginRight: 5
     },
     inputContainer: {
         flex: 1,
@@ -284,27 +312,23 @@ const styles = StyleSheet.create({
     },
     leftMessage: {
         flex: 1,
-        width: width - 50,
+        maxWidth: width - 60,
         alignSelf: 'flex-start',
         padding: 10,
         margin: 5,
-        marginLeft: 5,
         justifyContent: 'space-between',
         borderRadius: 10,
-        elevation: 1,
         backgroundColor: '#fff',
 
     },
     rightMessage: {
         flex: 1,
-        width: width - 50,
+        maxWidth: width - 60,
         alignSelf: 'flex-end',
         padding: 10,
         margin: 5,
-        marginLeft: 5,
         justifyContent: 'space-between',
         borderRadius: 10,
-        elevation: 1,
         backgroundColor: '#fff',
 
     },
@@ -312,14 +336,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold'
     },
     messageContent: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'space-between'
 
     },
     time: {
-        alignSelf: 'flex-end',
         fontSize: 12,
-        color: 'grey'
+        color: 'grey',
+        alignSelf: 'flex-end'
     }
 });
