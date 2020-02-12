@@ -6,6 +6,7 @@ import {
     NavigationState
 } from 'react-navigation';
 import firebaseSDK from '../config/firebaseSDK';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 
 
 interface LoginProps {
@@ -79,10 +80,14 @@ export default class Login extends React.Component<LoginProps, LoginState> {
                     <TextInput
                         style={styles.nameInput}
                         placeholder="Email"
+                        returnKeyType={"next"}
+                        blurOnSubmit={false}
+                        onSubmitEditing={() => { this.secondTextInput.focus(); }}
                         onChangeText={this.onChangeTextEmail}
                         value={this.state.email}
                     />
                     <TextInput
+                        ref={(input) => { this.secondTextInput = input }}
                         style={styles.nameInput}
                         secureTextEntry={true}
                         placeholder="Password"

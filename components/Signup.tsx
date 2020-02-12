@@ -14,6 +14,7 @@ import {
     NavigationScreenProp,
     NavigationState
 } from 'react-navigation';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 
 import firebase from "@firebase/app";
 
@@ -38,7 +39,7 @@ export default class Signup extends React.Component<SignupProps, SignupState> {
         header: null
     };
 
-    constructor(props:any) {
+    constructor(props: any) {
         super(props);
         this.state = {
             name: '',
@@ -66,55 +67,65 @@ export default class Signup extends React.Component<SignupProps, SignupState> {
         }
     };
 
-    onChangeTextEmail = (email:string) => this.setState({ email });
-    onChangeTextPassword = (password:string) => this.setState({ password });
-    onChangeTextName = (name:string) => this.setState({ name });
+    onChangeTextEmail = (email: string) => this.setState({ email });
+    onChangeTextPassword = (password: string) => this.setState({ password });
+    onChangeTextName = (name: string) => this.setState({ name });
 
     render() {
         return (
             <ImageBackground blurRadius={0} source={require('../assets/bgImage.jpg')} style={{ width: '100%', height: '100%' }}>
                 <View style={styles.container}>
-                    <TextInput
-                        style={styles.nameInput}
-                        placeholder="Name"
-                        onChangeText={this.onChangeTextName}
-                        value={this.state.name}
-                    />
-                    <TextInput
-                        style={styles.nameInput}
-                        placeholder="Email"
-                        onChangeText={this.onChangeTextEmail}
-                        value={this.state.email}
-                    />
-                    <TextInput
-                        style={styles.nameInput}
-                        placeholder="Password"
-                        onChangeText={this.onChangeTextPassword}
-                        value={this.state.password}
-                        secureTextEntry={true}
-                    />
+                    <KeyboardAwareScrollView contentContainerStyle={{ justifyContent: 'center', flex: 1 }} >
+                        <TextInput
+                            style={styles.nameInput}
+                            returnKeyType={"next"}
+                            placeholder="Name"
+                            blurOnSubmit={false}
+                            onSubmitEditing={() => { this.secondTextInput.focus(); }}
+                            onChangeText={this.onChangeTextName}
+                            value={this.state.name}
+                        />
+                        <TextInput
+                            ref={(input) => { this.secondTextInput = input }}
+                            style={styles.nameInput}
+                            placeholder="Email"
+                            blurOnSubmit={false}
+                            onSubmitEditing={() => { this.thirdTextInput.focus(); }}
+                            returnKeyType={"next"}
+                            onChangeText={this.onChangeTextEmail}
+                            value={this.state.email}
+                        />
+                        <TextInput
+                            ref={(input) => { this.thirdTextInput = input }}
+                            style={styles.nameInput}
+                            placeholder="Password"
+                            onChangeText={this.onChangeTextPassword}
+                            value={this.state.password}
+                            secureTextEntry={true}
+                        />
 
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity
-                            activeOpacity={0.5}
-                            style={styles.button}
-                            onPress={this.onPressCreate}
-                        >
-                            <Text style={styles.buttonText}>Signup</Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.login}>
-                            <Text style={{ color: '#fff', marginBottom: 3 }}>Already have an account?</Text>
+                        <View style={styles.buttonContainer}>
                             <TouchableOpacity
                                 activeOpacity={0.5}
                                 style={styles.button}
-                                onPress={() => this.props.navigation.navigate('Login')}
+                                onPress={this.onPressCreate}
                             >
-                                <Text style={{fontWeight:'bold'}} >Login</Text>
+                                <Text style={styles.buttonText}>Signup</Text>
                             </TouchableOpacity>
-                        </View>
 
-                    </View>
+                            <View style={styles.login}>
+                                <Text style={{ color: '#fff', marginBottom: 3 }}>Already have an account?</Text>
+                                <TouchableOpacity
+                                    activeOpacity={0.5}
+                                    style={styles.button}
+                                    onPress={() => this.props.navigation.navigate('Login')}
+                                >
+                                    <Text style={{ fontWeight: 'bold' }} >Login</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                        </View>
+                    </KeyboardAwareScrollView>
                 </View>
             </ImageBackground>
         );
@@ -143,9 +154,9 @@ const styles = StyleSheet.create({
     buttonContainer: {
         alignItems: 'center',
         margin: 20,
-        justifyContent: 'space-between',  
+        justifyContent: 'space-between',
     },
-    login:{
+    login: {
         marginTop: 60
     },
     button: {

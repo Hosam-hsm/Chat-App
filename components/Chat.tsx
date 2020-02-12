@@ -2,7 +2,20 @@ import React from 'react';
 import '@firebase/firestore';
 import '@firebase/auth'
 import '@firebase/storage'
-import { StyleSheet, Text, View, TextInput, Dimensions, KeyboardAvoidingView, TouchableOpacity, ImageBackground, Image } from 'react-native';
+import {
+    StyleSheet,
+    Text,
+    View,
+    TextInput,
+    Dimensions,
+    KeyboardAvoidingView,
+    TouchableOpacity,
+    ImageBackground,
+    Platform,
+    Image,
+    SafeAreaView
+} from 'react-native';
+import { Video } from 'expo-av';
 import {
     NavigationParams,
     NavigationScreenProp,
@@ -22,7 +35,8 @@ const { height, width } = Dimensions.get('window')
 
 
 interface ChatProps {
-    navigation: NavigationScreenProp<NavigationState, NavigationParams>;
+    navigation?: NavigationScreenProp<NavigationState, NavigationParams>;
+
 }
 
 interface ChatState {
@@ -34,9 +48,13 @@ interface ChatState {
 }
 
 
+
 class Chat extends React.Component<ChatProps, ChatState> {
 
-    static navigationOptions = ({ navigation }) => ({
+    private chatRef: any;
+    private storageRef: any;
+    private usersRef: any;
+    static navigationOptions = (navigation: NavigationScreenProp<NavigationState, NavigationParams>) => ({
         title: (navigation.state.params || {}).name || 'Chat!'
     });
 
@@ -56,18 +74,18 @@ class Chat extends React.Component<ChatProps, ChatState> {
 
     componentDidMount() {
         this.getPermissionAsync();
-        this.chatRef.onSnapshot((query) => {
+        this.chatRef.onSnapshot((query: any) => {
             this.setState({ messages: [] })
-            query.forEach((doc) => {
+            query.forEach((doc: any) => {
                 this.setState({
                     messages: this.state.messages.concat(doc.data())
                 })
             })
         })
 
-        this.usersRef.onSnapshot((query) => {
+        this.usersRef.onSnapshot((query: any) => {
             this.setState({ typingUser: '' })
-            query.forEach((doc) => {
+            query.forEach((doc: any) => {
                 console.log(this.state.typingUser)
                 if (doc.data().isTyping)
                     this.setState({
@@ -87,6 +105,7 @@ class Chat extends React.Component<ChatProps, ChatState> {
 
 
     submitMessage = (text: string, username: string, uid: string) => {
+
         var time = new Date().getTime();
         var formattedTime = moment(time).format("hh:mm A");
         text.trim() !== "" &&
@@ -101,44 +120,6 @@ class Chat extends React.Component<ChatProps, ChatState> {
         this.usersRef.doc(firebase.auth().currentUser.uid).update({ isTyping: false })
     }
 
-
-    renderMessage(item: object, index: number) {
-        let uid = firebase.auth().currentUser.uid
-        return (
-            uid === item.uid ?
-                <View style={styles.rightMessage}>
-                    <View>
-                        <Text style={styles.username}>{item.username}</Text>
-                    </View>
-                    {item.imageUrl ?
-
-                        <Image style={{ marginTop: 5, alignSelf: 'center', height: height / 3, width: width - 65, resizeMode: 'contain', }} source={{ uri: item.imageUrl }} />
-
-                        : null}
-                    <View style={styles.messageContent}>
-                        <Text>{item.text}</Text>
-                    </View>
-                    <Text style={styles.time}>{item.time}</Text>
-
-                </View>
-                :
-                <View style={styles.leftMessage} >
-                    <View>
-                        <Text style={styles.username}>{item.username}</Text>
-                    </View>
-                    {item.imageUrl ?
-
-                        <Image style={{ marginTop: 5, alignSelf: 'center', height: height / 3, width: width - 65, resizeMode: 'contain', }} source={{ uri: item.imageUrl }} />
-
-                        : null}
-                    <View style={styles.messageContent}>
-                        <Text>{item.text}</Text>
-                    </View>
-                    <Text style={styles.time}>{item.time}</Text>
-                </View>
-        )
-    }
-
     checkTyping = (length: number) => {
         length === 0 ?
             this.usersRef.doc(firebase.auth().currentUser.uid).update({ isTyping: false })
@@ -150,82 +131,152 @@ class Chat extends React.Component<ChatProps, ChatState> {
         firebase.auth().signOut();
     };
 
-
     render() {
         console.disableYellowBox = true;
         const text = this.state.text
         var username = firebase.auth().currentUser.displayName;
         var uid = firebase.auth().currentUser.uid
         return (
-            <ImageBackground blurRadius={0} source={require('../assets/bgImage.jpg')} style={{ width: '100%', height: '100%' }}>
-                <View style={styles.container}>
-                    <View style={styles.header}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text style={{ fontSize: 22, fontWeight: 'bold' }}>GROUP CHAT</Text>
-                            <TouchableOpacity
-                                style={{ alignSelf: 'flex-end' }}
-                                activeOpacity={0.5}
-                                onPress={() => this.logout()}
-                            >
-                                <Text style={styles.logoutText}>Logout</Text>
-                            </TouchableOpacity>
-                        </View>
-                        {
-                            this.state.typingUser ?
-                                <View style={{ flexDirection: 'row' }}>
-                                    <Text style={{ paddingBottom: 5 }}>{this.state.typingUser} is typing</Text>
-                                    <LottieView source={require('../assets/dots.json')}
-                                        autoPlay loop
-                                        style={{ height: 20, width: 20 }}
-                                    />
-                                </View>
-                                :
-                                null
-                        }
-
-                    </View>
-
-                    <View>
-                        <FlatList
-                            ref={(ref) => this.flatList = ref}
-                            contentContainerStyle={{ marginTop: 15, paddingBottom: 160 }}
-                            data={this.state.messages}
-                            renderItem={({ item, index }) => this.renderMessage(item, index)}
-                            keyExtractor={(item, index) => item.uid}
-                            onContentSizeChange={() =>
-                                this.flatList.scrollToEnd({ animated: true })
-                            }
-                            getItemLayout={(data, index) => (
-                                { length: 180, offset: 180 * index, index }
-                            )}
-
-                        />
-                    </View>
-
-                    <KeyboardAvoidingView behavior="padding" style={styles.inputContainer}>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="Type a message"
-                            onChangeText={(text) => this.setState({ text: text },
-                                () => {
-                                    this.checkTyping(text.length);
-                                })}
-                            value={this.state.text}
-                            multiline={true}
-                        />
-                        <Icon onPress={this.submitImage} name="ios-camera" size={25} color="grey" style={styles.cameraIcon} />
-
-
-                        <TouchableOpacity style={styles.sendButton} onPress={() => this.submitMessage(text, username, uid)} activeOpacity={.7}>
-                            <Icon name="md-send" size={25} color="#fff" style={{ marginLeft: 5 }} />
+            <View style={styles.container}>
+                {/* header starts  */}
+                <View style={styles.header}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 22, fontWeight: 'bold' }}>GROUP CHAT</Text>
+                        <TouchableOpacity
+                            style={{ alignSelf: 'flex-end' }}
+                            activeOpacity={0.5}
+                            onPress={() => this.logout()}
+                        >
+                            <Text style={styles.logoutText}>Logout</Text>
                         </TouchableOpacity>
+                    </View>
+                    {
+                        this.state.typingUser ?
+                            <View style={{ flexDirection: 'row' }}>
+                                <Text style={{ paddingBottom: 5 }}>{this.state.typingUser} is typing</Text>
+                                <LottieView source={require('../assets/dots.json')}
+                                    autoPlay loop
+                                    style={{ height: 20, width: 20 }}
+                                />
+                            </View>
+                            :
+                            null
+                    }
+                </View>
+                {/* Header ends */}
+
+                {/* Chat starts */}
+                <SafeAreaView style={{ flex: 1 }}>
+                    <KeyboardAvoidingView
+                        style={{ flex: 1 }}
+                        behavior={'padding'}>
+                        <ScrollView
+                            ref={ref => this.scrollView = ref}
+                            onContentSizeChange={(contentWidth, contentHeight) => {
+                                this.scrollView.scrollToEnd({ animated: true });
+                            }}
+                            style={{ flex: 1 }}
+                            contentContainerStyle={{ paddingBottom: 100 }}>
+
+                            {this.state.messages.map(message => {
+                                return (
+                                    uid === message.uid ?
+                                        <View style={styles.rightMessage}>
+                                            <View>
+                                                <Text style={styles.username}>{message.username}</Text>
+                                            </View>
+                                            {
+                                                message.imageUrl ?
+                                                    <Image style={{ marginTop: 5, alignSelf: 'center', height: height / 3, width: width - 65, resizeMode: 'contain', }} source={{ uri: message.imageUrl }} />
+                                                    : null
+                                            }
+                                            {
+                                                message.videoUrl ?
+                                                    <View>
+                                                        <Video
+                                                            source={{ uri: message.videoUrl }}
+                                                            rate={1.0}
+                                                            volume={1.0}
+                                                            isMuted={false}
+                                                            resizeMode="cover"
+                                                            shouldPlay={false}
+                                                            useNativeControls
+                                                            style={{
+                                                                marginTop: 5, alignSelf: 'center', height: height / 3, width: width - 65,
+                                                            }}
+                                                        />
+                                                    </View>
+                                                    :
+                                                    null
+                                            }
+                                            <View style={styles.messageContent}>
+                                                <Text>{message.text}</Text>
+                                            </View>
+                                            <Text style={styles.time}>{message.time}</Text>
+
+                                        </View>
+                                        :
+                                        <View style={styles.leftMessage} >
+                                            <View>
+                                                <Text style={styles.username}>{message.username}</Text>
+                                            </View>
+                                            {
+                                                message.imageUrl ?
+                                                    <Image style={{ marginTop: 5, alignSelf: 'center', height: height / 3, width: width - 65, resizeMode: 'contain', }} source={{ uri: message.imageUrl }} />
+                                                    : null
+                                            }
+                                            {
+                                                message.videoUrl ?
+                                                    <View>
+                                                        <Video
+                                                            ref={ref => this.video = ref}
+                                                            source={{ uri: message.videoUrl }}
+                                                            rate={1.0}
+                                                            volume={1.0}
+                                                            isMuted={false}
+                                                            useNativeControls
+                                                            resizeMode="cover"
+                                                            shouldPlay={false}
+                                                            style={{
+                                                                marginTop: 5, alignSelf: 'center', height: height / 3, width: width - 65,
+                                                            }}
+                                                        />
+                                                    </View>
+                                                    :
+                                                    null
+                                            }
+                                            <View style={styles.messageContent}>
+                                                <Text>{message.text}</Text>
+                                            </View>
+                                            <Text style={styles.time}>{message.time}</Text>
+                                        </View>
+                                )
+                            })}
+
+                        </ScrollView>
                     </KeyboardAvoidingView>
+                </SafeAreaView>
+                {/* chat ends */}
 
+                {/* input starts */}
 
-
-                </View >
-            </ImageBackground>
-
+                <KeyboardAvoidingView behavior={'padding'} style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.textInput}
+                        placeholder="Type a message"
+                        onChangeText={(text) => this.setState({ text: text },
+                            () => {
+                                this.checkTyping(text.length);
+                            })}
+                        value={this.state.text}
+                        multiline={true}
+                    />
+                    <Icon onPress={this.submitImage} name="ios-camera" size={25} color="grey" style={styles.cameraIcon} />
+                    <TouchableOpacity style={styles.sendButton} onPress={() => this.submitMessage(text, username, uid)} activeOpacity={.7}>
+                        <Icon name="md-send" size={25} color="#fff" style={{ marginLeft: 5 }} />
+                    </TouchableOpacity>
+                </KeyboardAvoidingView>
+            </View >
         )
     }
 
@@ -234,7 +285,7 @@ class Chat extends React.Component<ChatProps, ChatState> {
         var uid = firebase.auth().currentUser.uid
         let result = await ImagePicker.launchImageLibraryAsync({
             base64: true,
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
             allowsEditing: true,
             aspect: [4, 3],
             quality: 0.5
@@ -243,19 +294,36 @@ class Chat extends React.Component<ChatProps, ChatState> {
             const response = await fetch(result.uri);
             const blob = await response.blob();
             var ref = firebase.storage().ref().child(`Images/${Math.random()}`);
-            ref.put(blob).then((snap) => {
-                ref.getDownloadURL().then((url) => {
-                    var time = new Date().getTime();
-                    var formattedTime = moment(time).format("hh:mm A");
-                    this.chatRef.doc(new Date().getTime().toString()).set({
-                        username: username,
-                        date: new Date().toLocaleDateString(),
-                        time: formattedTime,
-                        uid: uid,
-                        imageUrl: url
+            result.type === 'image' ?
+                ref.put(blob).then((snap) => {
+                    ref.getDownloadURL().then((url) => {
+                        var time = new Date().getTime();
+                        var formattedTime = moment(time).format("hh:mm A");
+                        this.chatRef.doc(new Date().getTime().toString()).set({
+                            username: username,
+                            date: new Date().toLocaleDateString(),
+                            time: formattedTime,
+                            uid: uid,
+                            imageUrl: url,
+                            height:result.height,
+                            width:result.width
+                        })
                     })
                 })
-            });
+                :
+                ref.put(blob).then((snap) => {
+                    ref.getDownloadURL().then((url) => {
+                        var time = new Date().getTime();
+                        var formattedTime = moment(time).format("hh:mm A");
+                        this.chatRef.doc(new Date().getTime().toString()).set({
+                            username: username,
+                            date: new Date().toLocaleDateString(),
+                            time: formattedTime,
+                            uid: uid,
+                            videoUrl: url
+                        })
+                    })
+                })
             ref.put(blob).on("state_changed", (snapshot) => {
                 var progress = ((snapshot.bytesTransferred / snapshot.totalBytes) * 100).toFixed(0)
                 this.setState({ eventImagePer: progress })
